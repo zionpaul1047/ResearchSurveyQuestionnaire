@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="연구 설문">
+  <rect width="64" height="64" rx="14" fill="#315d51"/>
+  <path d="M20 15h24a4 4 0 0 1 4 4v30H16V19a4 4 0 0 1 4-4Z" fill="#fff"/>
+  <path d="M25 13h14v7H25z" fill="#d9aa6b"/>
+  <path d="M23 29h5l2 2 4-5" fill="none" stroke="#315d51" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M37 29h6M23 39h5l2 2 4-5M37 39h6" fill="none" stroke="#315d51" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

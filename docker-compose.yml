@@ -1,0 +1,66 @@
+name: researchsurveyquestionnaire
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: research-survey-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-research_survey}
+      POSTGRES_USER: ${POSTGRES_USER:-survey_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-survey_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-survey_app} -d ${POSTGRES_DB:-research_survey}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    container_name: research-survey-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-research_survey}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-survey_app}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-survey_password}
+      SURVEY_UPLOAD_DIRECTORY: /app/uploads
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: ${UPLOAD_MAX_FILE_SIZE:-10MB}
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: ${UPLOAD_MAX_FILE_SIZE:-10MB}
+      SURVEY_ADMIN_USERNAME: ${SURVEY_ADMIN_USERNAME:-admin}
+      SURVEY_ADMIN_PASSWORD: ${SURVEY_ADMIN_PASSWORD:-change-me-before-production}
+      SURVEY_ANALYST_USERNAME: ${SURVEY_ANALYST_USERNAME:-analyst}
+      SURVEY_ANALYST_PASSWORD: ${SURVEY_ANALYST_PASSWORD:-change-me-before-production}
+      SURVEY_ANALYTICS_MIN_GROUP_SIZE: ${SURVEY_ANALYTICS_MIN_GROUP_SIZE:-5}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      - survey_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: research-survey-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  survey_uploads:
