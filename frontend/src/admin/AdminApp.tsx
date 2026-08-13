@@ -115,6 +115,7 @@ function Dashboard({ user, summary, onRefresh, onLogout, refreshing }: { user: A
       </header>
 
       <main className="admin-main">
+        <div className="admin-demo-notice" role="note"><strong>외부 확인용 데모</strong><span>현재 데이터는 테스트용이며 실제 개인정보를 수집하거나 운영 판단에 사용하면 안 됩니다.</span></div>
         <section className="admin-heading">
           <div>
             <p className="admin-eyebrow">AGGREGATE ANALYTICS</p>

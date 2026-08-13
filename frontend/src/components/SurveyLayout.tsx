@@ -20,6 +20,10 @@ export default function SurveyLayout({ step, steps, saveMessage, children, onMov
         </div>
         <p><i />{saveMessage || "보안 연결 사용 중"}</p>
       </header>
+      <div className="demo-environment-banner" role="note">
+        <strong>데모 확인용 화면</strong>
+        <span>실제 이름·연락처·생년월일·건강정보를 입력하지 말고 임의의 테스트 값만 사용해 주세요.</span>
+      </div>
       <div className="page-layout">
         <aside className="sidebar">
           <label>설문 진행</label>
