@@ -8,12 +8,23 @@ import FoodStep from "./steps/FoodStep";
 import FractureStep from "./steps/FractureStep";
 import ProductStep from "./steps/ProductStep";
 import ReviewStep from "./steps/ReviewStep";
-import { initialSurveyForm, SOURCE_FOOD_ITEMS, type SubmissionResponse, type SurveyForm } from "./types";
+import { initialSurveyForm, SOURCE_FOOD_ITEMS, type Eligibility, type SubmissionResponse, type SurveyForm } from "./types";
 import { ageOnDate, ALLOWED_IMAGE_TYPES, CONTACT_TIME_OPTIONS, hasAtMostOneDecimal, isIntegerInRange, isValidKoreanPhone, MAX_ATTACHMENTS_PER_CATEGORY, monthMinus, PARTICIPANT_CODE_PATTERN, PRODUCT_FREQUENCIES, todayLocal } from "./validation";
 
 const STEPS = ["참여 동의", "적격성 확인", "기본 정보", "제품 섭취", "골절 경험", "식품 섭취", "확인 및 제출"];
 const DRAFT_KEY = "research-survey-form-v2.4";
 const ID_KEY = "research-survey-submission-id";
+
+function eligibilityReasons(eligibility: Eligibility, age: number | null): string[] {
+  const reasons: string[] = [];
+  if (eligibility.voluntaryConsent === "NO") reasons.push("자발적 연구 참여에 동의하지 않아 참여를 계속할 수 없습니다.");
+  if (age !== null && age < 55) reasons.push(`입력한 생년월일 기준 만 ${age}세입니다. 현재 구현된 연구 참여 기준은 만 55세 이상입니다.`);
+  if (eligibility.femaleAtBirth === "NO") reasons.push("현재 구현된 연구 기준의 출생 시 성별 조건을 충족하지 않습니다.");
+  if (eligibility.femaleAtBirth === "DECLINE") reasons.push("출생 시 성별을 확인할 수 없어 연구 담당자의 추가 확인이 필요합니다.");
+  if (eligibility.exclusionDisease === "EXCLUSION") reasons.push("제외 질환을 치료 또는 추적관찰 중인 응답으로 확인됩니다.");
+  if (eligibility.exclusionDisease === "UNKNOWN") reasons.push("제외 질환 여부를 알 수 없어 연구 담당자의 추가 확인이 필요합니다.");
+  return reasons;
+}
 
 function loadLocalForm(): SurveyForm {
   try {
@@ -69,7 +80,22 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [form]);
 
-  const disqualified = useMemo(() => form.eligibility.voluntaryConsent === "NO" || form.eligibility.over55 === "NO" || ["NO", "DECLINE"].includes(form.eligibility.femaleAtBirth) || ["EXCLUSION", "UNKNOWN"].includes(form.eligibility.exclusionDisease), [form.eligibility]);
+  const eligibilityAge = useMemo(
+    () => ageOnDate(form.eligibility.birthDate, form.metadata.surveyDate),
+    [form.eligibility.birthDate, form.metadata.surveyDate]
+  );
+  const disqualificationReasons = useMemo(
+    () => eligibilityReasons(form.eligibility, eligibilityAge),
+    [form.eligibility, eligibilityAge]
+  );
+  const disqualified = disqualificationReasons.length > 0;
+
+  useEffect(() => {
+    const over55 = eligibilityAge === null ? "" : eligibilityAge >= 55 ? "YES" : "NO";
+    setForm((current) => current.eligibility.over55 === over55
+      ? current
+      : { ...current, eligibility: { ...current.eligibility, over55 } });
+  }, [eligibilityAge]);
 
   const patchForm = (patch: Partial<SurveyForm>) => setForm((current) => ({ ...current, ...patch }));
   const move = (next: number) => { setError(""); setStep(Math.max(0, Math.min(STEPS.length - 1, next))); window.scrollTo({ top: 0, behavior: "smooth" }); };
@@ -110,7 +136,7 @@ export default function App() {
       const age = ageOnDate(form.eligibility.birthDate, form.metadata.surveyDate);
       if (age === null || age < 0 || age > 120) return "생년월일과 조사일을 다시 확인해 주세요.";
       if ((age >= 55) !== (form.eligibility.over55 === "YES")) return `생년월일 기준 만 ${age}세로, 만 55세 이상 응답과 일치하지 않습니다.`;
-      if (disqualified) return "현재 응답으로는 설문을 계속할 수 없습니다. 연구 담당자에게 문의해 주세요.";
+      if (disqualified) return `${disqualificationReasons[0]} 입력이 정확하다면 연구 담당자에게 문의해 주세요.`;
     }
     if (targetStep === 2) {
       const info = form.basicInfo;
@@ -215,7 +241,7 @@ export default function App() {
 
   return <SurveyLayout step={step} steps={STEPS} saveMessage={saveMessage} onMove={move}>
     {step === 0 && <ConsentStep form={form} onChange={patchForm} />}
-    {step === 1 && <EligibilityStep value={form.eligibility} disqualified={disqualified} onChange={(eligibility) => patchForm({ eligibility })} />}
+    {step === 1 && <EligibilityStep value={form.eligibility} surveyDate={form.metadata.surveyDate} age={eligibilityAge} disqualificationReasons={disqualificationReasons} onChange={(eligibility) => patchForm({ eligibility })} />}
     {step === 2 && <BasicInfoStep value={form.basicInfo} onChange={(basicInfo) => patchForm({ basicInfo })} />}
     {step === 3 && <ProductStep experience={form.productExperience} surveyDate={form.metadata.surveyDate} details={form.productDetails} products={form.products} purchaseEvidenceFiles={purchaseEvidenceFiles} productPhotoFiles={productPhotoFiles} onExperienceChange={(productExperience) => patchForm({ productExperience })} onDetailsChange={(productDetails) => patchForm({ productDetails })} onProductsChange={(products) => patchForm({ products })} onPurchaseEvidenceFilesChange={(files) => handleFilesChange(files, setPurchaseEvidenceFiles)} onProductPhotoFilesChange={(files) => handleFilesChange(files, setProductPhotoFiles)} />}
     {step === 4 && <FractureStep experience={form.fractureExperience} surveyDate={form.metadata.surveyDate} totalCount={form.fractureTotalCount} countUnknown={form.fractureCountUnknown} fractures={form.fractures} showProductTiming={form.productExperience === "REGULAR"} onExperienceChange={(fractureExperience) => patchForm({ fractureExperience })} onTotalCountChange={(fractureTotalCount) => patchForm({ fractureTotalCount })} onCountUnknownChange={(fractureCountUnknown) => patchForm({ fractureCountUnknown, fractureTotalCount: fractureCountUnknown ? "" : form.fractureTotalCount })} onFracturesChange={(fractures) => patchForm({ fractures })} />}
