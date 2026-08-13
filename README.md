@@ -46,7 +46,17 @@ docker compose up --build
 
 로컬 기본 계정은 `.env.example`의 `admin` 또는 `analyst`입니다. 기본 비밀번호는 개발 편의를 위한 값이므로 외부 접속을 허용하기 전에 `.env`에서 반드시 변경하세요. 분석가는 집계 현황만 볼 수 있고 관리자는 이후 편집 기능까지 확장할 권한입니다.
 
-### 4. 종료
+### 4. 연구용 가상 응답 2,000건 추가
+
+그래프 확인용 데이터는 모두 `DEMO-2026-` 제출번호를 사용하며, 같은 스크립트를 다시 실행해도 중복되지 않습니다.
+
+```powershell
+Get-Content -Raw scripts/dev/seed_research_demo_2000.sql | docker compose exec -T postgres psql -U survey_app -d research_survey
+```
+
+이 데이터만 제거해야 할 때는 `scripts/dev/clear_research_demo.sql`을 같은 방식으로 실행합니다. 실제 데이터가 있는 DB에서는 대상 범위를 먼저 확인하세요.
+
+### 5. 종료
 
 ```bash
 docker compose down
@@ -109,7 +119,7 @@ docker compose up postgres -d
 - Nginx 프론트 제공 및 `/api` 프록시
 - 프론트·백엔드 GitHub Actions CI
 - Spring Security 기반 관리자·분석가 역할 권한
-- 개인정보 소규모 집단 억제가 적용된 읽기 전용 통계 API
+- 정확 건수·비율·표본수(N)를 제공하는 읽기 전용 연구 통계 API
 - 관리자 설문 현황 대시보드
 - 관리자 인증·통계 조회 감사로그
 

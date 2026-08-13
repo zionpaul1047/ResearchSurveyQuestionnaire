@@ -1,7 +1,6 @@
 package com.researchsurvey.questionnaire.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,22 +29,20 @@ class AdminAnalyticsServiceTest {
     }
 
     @Test
-    void suppressesSmallGroupsAndAverageCompletionTime() {
+    void returnsExactSmallGroupsAndAverageCompletionTime() {
         when(repository.loadOverview()).thenReturn(new OverviewRaw(10, 4, 6, 180L));
         when(repository.loadAgeGroups()).thenReturn(List.of(new MetricRaw("65~69세", 4), new MetricRaw("70~74세", 5)));
         when(repository.loadFoodDistributions()).thenReturn(List.of(
                 new FoodMetricRaw("MILK", "우유", "매일", 2),
                 new FoodMetricRaw("MILK", "우유", "주 1~2회", 6)));
 
-        var summary = new AdminAnalyticsService(repository, 5).getSummary();
+        var summary = new AdminAnalyticsService(repository).getSummary();
 
         assertThat(summary.overview().submissionRate()).isEqualTo(40.0);
-        assertThat(summary.overview().averageCompletionSeconds()).isNull();
-        assertThat(summary.overview().averageCompletionSuppressed()).isTrue();
-        assertThat(summary.ageGroups().get(0).value()).isNull();
-        assertThat(summary.ageGroups().get(0).suppressed()).isTrue();
+        assertThat(summary.overview().averageCompletionSeconds()).isEqualTo(180L);
+        assertThat(summary.ageGroups().get(0).value()).isEqualTo(4L);
         assertThat(summary.ageGroups().get(1).value()).isEqualTo(5L);
-        assertThat(summary.foodDistributions().get(0).value()).isNull();
+        assertThat(summary.foodDistributions().get(0).value()).isEqualTo(2L);
         assertThat(summary.foodDistributions().get(1).value()).isEqualTo(6L);
     }
 
@@ -53,17 +50,9 @@ class AdminAnalyticsServiceTest {
     void returnsAverageWhenEnoughSubmittedResponsesExist() {
         when(repository.loadOverview()).thenReturn(new OverviewRaw(8, 6, 2, 125L));
 
-        var summary = new AdminAnalyticsService(repository, 5).getSummary();
+        var summary = new AdminAnalyticsService(repository).getSummary();
 
         assertThat(summary.overview().submissionRate()).isEqualTo(75.0);
         assertThat(summary.overview().averageCompletionSeconds()).isEqualTo(125L);
-        assertThat(summary.overview().averageCompletionSuppressed()).isFalse();
-    }
-
-    @Test
-    void rejectsInvalidMinimumGroupSize() {
-        assertThatThrownBy(() -> new AdminAnalyticsService(repository, 0))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("1 이상");
     }
 }

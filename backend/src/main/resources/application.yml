@@ -43,7 +43,5 @@ survey:
   analyst:
     username: ${SURVEY_ANALYST_USERNAME:analyst}
     password: ${SURVEY_ANALYST_PASSWORD:change-me-before-production}
-  analytics:
-    minimum-group-size: ${SURVEY_ANALYTICS_MIN_GROUP_SIZE:5}
   cors:
     allowed-origins: ${SURVEY_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}

@@ -34,7 +34,6 @@ services:
       SURVEY_ADMIN_PASSWORD: ${SURVEY_ADMIN_PASSWORD:-change-me-before-production}
       SURVEY_ANALYST_USERNAME: ${SURVEY_ANALYST_USERNAME:-analyst}
       SURVEY_ANALYST_PASSWORD: ${SURVEY_ANALYST_PASSWORD:-change-me-before-production}
-      SURVEY_ANALYTICS_MIN_GROUP_SIZE: ${SURVEY_ANALYTICS_MIN_GROUP_SIZE:-5}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     volumes:

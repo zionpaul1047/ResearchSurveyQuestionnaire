@@ -2,7 +2,6 @@ package com.researchsurvey.questionnaire.service;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.researchsurvey.questionnaire.dto.AdminAnalyticsSummaryResponse;
@@ -17,21 +16,13 @@ import com.researchsurvey.questionnaire.repository.AdminAnalyticsRepository.Over
 @Service
 public class AdminAnalyticsService {
     private final AdminAnalyticsRepository repository;
-    private final int minimumGroupSize;
 
-    public AdminAnalyticsService(
-            AdminAnalyticsRepository repository,
-            @Value("${survey.analytics.minimum-group-size}") int minimumGroupSize) {
-        if (minimumGroupSize < 1) {
-            throw new IllegalArgumentException("통계 최소 집단 크기는 1 이상이어야 합니다.");
-        }
+    public AdminAnalyticsService(AdminAnalyticsRepository repository) {
         this.repository = repository;
-        this.minimumGroupSize = minimumGroupSize;
     }
 
     public AdminAnalyticsSummaryResponse getSummary() {
         OverviewRaw raw = repository.loadOverview();
-        boolean suppressAverage = raw.submitted() < minimumGroupSize || raw.averageSeconds() == null;
         double submissionRate = raw.total() == 0
                 ? 0.0
                 : Math.round((raw.submitted() * 1000.0 / raw.total())) / 10.0;
@@ -41,37 +32,31 @@ public class AdminAnalyticsService {
                 raw.submitted(),
                 raw.draft(),
                 submissionRate,
-                suppressAverage ? null : raw.averageSeconds(),
-                suppressAverage);
+                raw.averageSeconds());
 
         return new AdminAnalyticsSummaryResponse(
                 overview,
-                minimumGroupSize,
-                suppress(repository.loadDailySubmissions()),
-                suppress(repository.loadAgeGroups()),
-                suppress(repository.loadRegions()),
-                suppress(repository.loadProductExperiences()),
-                suppress(repository.loadFractureExperiences()),
-                suppressFood(repository.loadFoodDistributions()));
+                exact(repository.loadDailySubmissions()),
+                exact(repository.loadAgeGroups()),
+                exact(repository.loadRegions()),
+                exact(repository.loadProductExperiences()),
+                exact(repository.loadFractureExperiences()),
+                exactFood(repository.loadFoodDistributions()));
     }
 
-    private List<MetricPoint> suppress(List<MetricRaw> rows) {
+    private List<MetricPoint> exact(List<MetricRaw> rows) {
         return rows.stream()
-                .map(row -> new MetricPoint(
-                        row.label(),
-                        row.value() < minimumGroupSize ? null : row.value(),
-                        row.value() < minimumGroupSize))
+                .map(row -> new MetricPoint(row.label(), row.value()))
                 .toList();
     }
 
-    private List<FoodMetricPoint> suppressFood(List<FoodMetricRaw> rows) {
+    private List<FoodMetricPoint> exactFood(List<FoodMetricRaw> rows) {
         return rows.stream()
                 .map(row -> new FoodMetricPoint(
                         row.foodCode(),
                         row.foodName(),
                         row.frequency(),
-                        row.value() < minimumGroupSize ? null : row.value(),
-                        row.value() < minimumGroupSize))
+                        row.value()))
                 .toList();
     }
 }

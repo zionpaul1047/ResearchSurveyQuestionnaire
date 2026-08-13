@@ -4,7 +4,6 @@ import java.util.List;
 
 public record AdminAnalyticsSummaryResponse(
         Overview overview,
-        int minimumGroupSize,
         List<MetricPoint> dailySubmissions,
         List<MetricPoint> ageGroups,
         List<MetricPoint> regions,
@@ -17,10 +16,9 @@ public record AdminAnalyticsSummaryResponse(
             long submittedResponses,
             long draftResponses,
             double submissionRate,
-            Long averageCompletionSeconds,
-            boolean averageCompletionSuppressed) {}
+            Long averageCompletionSeconds) {}
 
-    public record MetricPoint(String label, Long value, boolean suppressed) {}
+    public record MetricPoint(String label, long value) {}
 
-    public record FoodMetricPoint(String foodCode, String foodName, String frequency, Long value, boolean suppressed) {}
+    public record FoodMetricPoint(String foodCode, String foodName, String frequency, long value) {}
 }

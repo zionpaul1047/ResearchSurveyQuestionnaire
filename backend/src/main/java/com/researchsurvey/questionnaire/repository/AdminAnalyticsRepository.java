@@ -27,10 +27,20 @@ public class AdminAnalyticsRepository {
 
     public List<MetricRaw> loadDailySubmissions() {
         return metrics("""
-                SELECT TO_CHAR((submitted_at AT TIME ZONE 'Asia/Seoul')::date, 'YYYY-MM-DD') AS label, COUNT(*) AS value
-                FROM survey_submission
-                WHERE status = 'SUBMITTED' AND submitted_at >= NOW() - INTERVAL '29 days'
-                GROUP BY 1 ORDER BY 1
+                WITH days AS (
+                    SELECT GENERATE_SERIES(
+                        (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul')::date - 29,
+                        (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Seoul')::date,
+                        INTERVAL '1 day'
+                    )::date AS day
+                )
+                SELECT TO_CHAR(days.day, 'YYYY-MM-DD') AS label, COUNT(submission.id) AS value
+                FROM days
+                LEFT JOIN survey_submission submission
+                    ON submission.status = 'SUBMITTED'
+                   AND (submission.submitted_at AT TIME ZONE 'Asia/Seoul')::date = days.day
+                GROUP BY days.day
+                ORDER BY days.day
                 """);
     }
 

@@ -5,8 +5,7 @@ export type AdminUser = {
 
 export type MetricPoint = {
   label: string;
-  value: number | null;
-  suppressed: boolean;
+  value: number;
 };
 
 export type FoodMetricPoint = MetricPoint & {
@@ -22,9 +21,7 @@ export type AnalyticsSummary = {
     draftResponses: number;
     submissionRate: number;
     averageCompletionSeconds: number | null;
-    averageCompletionSuppressed: boolean;
   };
-  minimumGroupSize: number;
   dailySubmissions: MetricPoint[];
   ageGroups: MetricPoint[];
   regions: MetricPoint[];
